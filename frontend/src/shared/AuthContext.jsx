@@ -206,7 +206,7 @@ export const AuthProvider = ({ children }) => {
             return {
                 ok: false,
                 error:
-                    "Server connection failed. Please ensure the backend is running on http://localhost:5000",
+                    "Server connection failed. Please try again later.",
             };
         }
     };
