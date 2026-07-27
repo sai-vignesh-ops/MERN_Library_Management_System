@@ -1,35 +1,63 @@
-import nodemailer from "nodemailer";
+import brevo from "@getbrevo/brevo";
 
-const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
-    auth: {
-        user: process.env.BREVO_SMTP_LOGIN,
-        pass: process.env.BREVO_SMTP_KEY,
-    },
-});
+const apiInstance = new brevo.TransactionalEmailsApi();
+
+apiInstance.setApiKey(
+    brevo.TransactionalEmailsApiApiKeys.apiKey,
+    process.env.BREVO_API_KEY
+);
 
 const sendOTP = async (email, otp) => {
     try {
-        await transporter.sendMail({
-            from: `"ShelfWise Library" <${process.env.BREVO_SENDER_EMAIL}>`,
-            to: email,
-            subject: "Verify your email - ShelfWise Library",
-            html: `
-        <div style="font-family: Arial, sans-serif;">
-          <h2>ShelfWise Library</h2>
-          <p>Your OTP is:</p>
-          <h1 style="letter-spacing:4px;">${otp}</h1>
-          <p>This OTP is valid for 10 minutes.</p>
-          <p>If you did not request this OTP, please ignore this email.</p>
-        </div>
-      `,
-        });
+        const sendSmtpEmail = new brevo.SendSmtpEmail();
+
+        sendSmtpEmail.sender = {
+            name: "ShelfWise Library",
+            email: process.env.BREVO_SENDER_EMAIL,
+        };
+
+        sendSmtpEmail.to = [
+            {
+                email: email,
+            },
+        ];
+
+        sendSmtpEmail.subject = "Verify your email - ShelfWise Library";
+
+        sendSmtpEmail.htmlContent = `
+      <div style="font-family: Arial, sans-serif; padding:20px;">
+        <h2>ShelfWise Library</h2>
+
+        <p>Hello,</p>
+
+        <p>Your One-Time Password (OTP) is:</p>
+
+        <h1 style="letter-spacing:5px;color:#2563eb;">
+          ${otp}
+        </h1>
+
+        <p>This OTP is valid for <strong>10 minutes</strong>.</p>
+
+        <p>If you did not request this OTP, you can safely ignore this email.</p>
+
+        <hr>
+
+        <small>© ShelfWise Library Management System</small>
+      </div>
+    `;
+
+        await apiInstance.sendTransacEmail(sendSmtpEmail);
 
         console.log("OTP email sent successfully.");
     } catch (error) {
-        console.error("Brevo SMTP Error:", error);
+        console.error("Brevo API Error:");
+
+        if (error.response) {
+            console.error(error.response.text || error.response.body);
+        } else {
+            console.error(error);
+        }
+
         throw error;
     }
 };
